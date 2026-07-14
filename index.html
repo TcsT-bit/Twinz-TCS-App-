@@ -10,9 +10,10 @@
 <meta name="apple-mobile-web-app-title" content="TWINZ">
 <title>TWINZ COOPERATE SERVICES - World Tier App</title>
 
-<!-- FIREBASE SDK -->
+<!-- FIREBASE SDK - REALTIME DB -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>
   :root {--bg:#0a0e1a; --card:#111827; --accent:#00d4ff; --accent2:#3b82f6; --text:#e5e7eb; --muted:#9ca3af; --success:#10b981; --warning:#fbbf24; --danger:#ef4444; --glow: 0 0 20px rgba(0,212,255,0.3);}
@@ -62,13 +63,15 @@
 <header><h1>TWINZ COOPERATE SERVICES PTY LTD</h1><p>BEST & QUALITY SERVICES | We Supply Workshops & Garages Across SA</p></header>
 
 <div id="loginScreen" class="login-screen">
-  <h2>Admin Login</h2><p style="color:var(--muted)">Select Role to Continue</p>
+  <h2>TWINZ Admin Login</h2><p style="color:var(--muted)">Enter Email + Password</p>
   <div style="max-width:400px;margin:20px auto">
-    <button class="btn" onclick="login('CEO')">Login as CEO - Full Access</button>
-    <button class="btn" onclick="login('Manager')">Login as Manager</button>
-    <button class="btn" onclick="login('Sales')">Login as Sales</button>
-    <button class="btn" onclick="login('Reception')">Login as Reception</button>
-    <button class="btn secondary" onclick="enterClientMode()">Enter as Client</button>
+    <input type="email" id="loginEmail" placeholder="Email: ceo@twinz.co.za">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button class="btn" onclick="loginWithEmail()">Login</button>
+    <button class="btn secondary" onclick="createAccount()">Create Account</button>
+    <div id="authError" style="color:var(--danger);margin-top:10px"></div>
+    <hr style="margin:20px 0;border-color:#374151">
+    <button class="btn" style="background:#374151" onclick="enterClientMode()">Enter as Client - No Login</button>
   </div>
 </div>
 
@@ -111,6 +114,7 @@
 const firebaseConfig = {
   apiKey: "PASTE_YOUR_API_KEY",
   authDomain: "PASTE_YOUR_AUTH_DOMAIN",
+  databaseURL: "https://PASTE_YOUR_PROJECT_ID-default-rtdb.firebaseio.com", // ADD THIS FOR RTDB
   projectId: "PASTE_YOUR_PROJECT_ID",
   storageBucket: "PASTE_YOUR_STORAGE_BUCKET",
   messagingSenderId: "PASTE_YOUR_SENDER_ID",
@@ -121,7 +125,7 @@ const firebaseConfig = {
 // GLOBAL DATA
 let CATEGORIES = [];
 let CONTACT = {email:'twinz.cooperate.services@gmail.com',thabo:'068 254 7352',thabang:'069 894 9596',location:'Greater Tubatse, Limpopo',hours:'Mon - Sat | 8am - 6pm',company:'TWINZ COOPERATE SERVICES PTY LTD',reg:'2026/XXXXXX/07'};
-let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let unsubscribe = null; let dataLoaded = false; let db = null; let firebaseEnabled = false;
+let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let unsubscribe = null; let dataLoaded = false; let db = null; let firebaseEnabled = false; let auth = null;
 
 const DEFAULT_CATEGORIES = [
   {id:'diagnostics', name:'Vehicle Diagnostics',desc:'All Brand Diagnostics Software. JLR, VW, AUDI, BENZ, BMW, TOYOTA, ISUZU, FORD, MAZDA, NISSAN + more',features:['Full System Scan','DTC Clear','Service Reset','DPF Regen','EPB','SAS','Key Programming','Twinz Master Scanner V25'],price:'From R450', outOfStock:false, products:[]},
@@ -133,12 +137,21 @@ const DEFAULT_CATEGORIES = [
   {id:'food', name:'Food Supply',desc:'Wholesale food supply for businesses, restaurants and events',features:['Bulk Orders','Fresh Produce','Nationwide Delivery','Custom Quotes'],price:'Quote on Request', outOfStock:false, products:[]}
 ];
 
-// ========== INSTANT LOAD + FIREBASE SYNC ==========
+// ROLE MAPPING
+const ROLE_MAP = {
+  'ceo@twinz.co.za': 'CEO',
+  'manager@twinz.co.za': 'Manager',
+  'sales@twinz.co.za': 'Sales',
+  'reception@twinz.co.za': 'Reception'
+};
+
+// ========== INSTANT LOAD + FIREBASE AUTH + REALTIME SYNC ==========
 function initFirebase(){
   try{
     if(firebaseConfig.apiKey.includes("PASTE")) throw "No keys";
     if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
+    db = firebase.database(); // REALTIME DB
+    auth = firebase.auth();
     firebaseEnabled = true;
     return true;
   }catch(e){
@@ -158,9 +171,7 @@ function loadLocalData(){
 function startSync(){
   document.getElementById('loadingData').style.display='block';
   document.getElementById('loadingClient').style.display='block';
-
-  // INSTANT FALLBACK: 1.5s timeout
-  const fallbackTimer = setTimeout(()=>{ if(!dataLoaded){ loadLocalData(); showError("Running in Local Mode. Add Firebase keys for cloud sync."); }}, 1500);
+  const fallbackTimer = setTimeout(()=>{ if(!dataLoaded){ loadLocalData(); showError("Local Mode. Add Firebase keys for cloud sync."); }}, 1000);
 
   if(!initFirebase()){
     clearTimeout(fallbackTimer);
@@ -168,13 +179,16 @@ function startSync(){
     return;
   }
 
-  unsubscribe = db.collection('twinz_data').doc('main').onSnapshot((doc) => {
+  // REALTIME LISTENER - INSTANT SYNC
+  const ref = db.ref('twinz_data/main');
+  ref.on('value', (snapshot) => {
     clearTimeout(fallbackTimer);
-    if(doc.exists){
-      CATEGORIES = doc.data().categories || DEFAULT_CATEGORIES;
-      CONTACT = doc.data().contact || CONTACT;
+    const data = snapshot.val();
+    if(data){
+      CATEGORIES = data.categories || DEFAULT_CATEGORIES;
+      CONTACT = data.contact || CONTACT;
     } else {
-      db.collection('twinz_data').doc('main').set({categories: DEFAULT_CATEGORIES, contact: CONTACT});
+      ref.set({categories: DEFAULT_CATEGORIES, contact: CONTACT});
       CATEGORIES = DEFAULT_CATEGORIES;
     }
     dataLoaded = true;
@@ -191,29 +205,68 @@ function startSync(){
 }
 
 function saveToFirebase(){
-  if(!firebaseEnabled) { showError("Local Mode: Data will not sync. Add Firebase keys."); return; }
-  db.collection('twinz_data').doc('main').update({categories: CATEGORIES, contact: CONTACT})
+  if(!firebaseEnabled) { showError("Local Mode: Data will not sync."); return; }
+  db.ref('twinz_data/main').update({categories: CATEGORIES, contact: CONTACT})
 .catch(err=>{ showError("Save Failed: " + err.message); });
 }
 
-function showError(msg){ const box = document.getElementById('errorBox'); box.innerText = msg; box.style.display='block'; setTimeout(()=>{box.style.display='none'}, 4000); }
-// ========== END SYNC ==========
+function showError(msg){ const box = document.getElementById('errorBox'); if(box){box.innerText = msg; box.style.display='block'; setTimeout(()=>{box.style.display='none'}, 4000);}}
 
-function login(role){
-  currentRole = role;
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('roleBadge').className='role-badge '+role;
-  document.getElementById('roleBadge').innerText=role;
-  startSync(); // LOADS FOR EVERY ROLE INSTANTLY
+// AUTH FUNCTIONS
+function loginWithEmail(){
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  document.getElementById('authError').innerText = '';
+
+  if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; }
+  if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; }
+
+  auth.signInWithEmailAndPassword(email, password)
+.then((userCredential) => {
+    currentRole = ROLE_MAP[email.toLowerCase()] || 'Reception';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('roleBadge').className='role-badge '+currentRole;
+    document.getElementById('roleBadge').innerText=currentRole;
+    startSync();
+  })
+.catch((error) => {
+    document.getElementById('authError').innerText = error.message;
+  });
 }
+
+function createAccount(){
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  document.getElementById('authError').innerText = '';
+
+  if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; }
+  if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; }
+  if(password.length < 6){ document.getElementById('authError').innerText = 'Password must be 6+ characters'; return; }
+
+  auth.createUserWithEmailAndPassword(email, password)
+.then((userCredential) => {
+    alert('Account Created! Default role: Reception. Ask CEO to change role in Firebase.');
+    currentRole = 'Reception';
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('roleBadge').className='role-badge '+currentRole;
+    document.getElementById('roleBadge').innerText=currentRole;
+    startSync();
+  })
+.catch((error) => {
+    document.getElementById('authError').innerText = error.message;
+  });
+}
+
 function logout(){
-  if(unsubscribe) unsubscribe();
+  if(auth) auth.signOut();
   dataLoaded = false;
   document.getElementById('app').style.display='none';
   document.getElementById('loginScreen').style.display='block';
   document.getElementById('shareLinkBox').style.display='none';
 }
+
 function enterClientMode(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('clientView').style.display='block';

@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="TWINZ">
 <title>TWINZ COOPERATE SERVICES - World Tier App</title>
 
-<!-- FIREBASE SDK - REALTIME DB -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -92,7 +91,7 @@
   <div class="admin-bar">
     <span class="role-badge" id="roleBadge">CEO</span>
     <button class="btn" style="width:auto" onclick="logout()">Logout</button>
-    <button class="btn secondary" style="width:auto" onclick="openRoleManager()" id="roleManagerBtn" style="display:none">👥 Roles</button>
+    <button class="btn secondary" style="width:auto;display:none" onclick="openRoleManager()" id="roleManagerBtn">👥 Roles</button>
     <button class="btn secondary" style="width:auto" onclick="generateClientLink()">Generate Client Link</button>
     <button class="btn success" style="width:auto" onclick="openInvoice()">🧾 Invoice</button>
   </div>
@@ -105,7 +104,6 @@
     <div id="invoiceBox" style="display:none" class="card"></div>
     <div id="roleManagerBox" style="display:none" class="card"></div>
 
-    <!-- DASHBOARD FOR ALL ROLES -->
     <div id="dashboard" class="dashboard-grid"></div>
 
     <input type="text" id="globalSearch" class="search-bar" placeholder="🔍 Search all products..." onkeyup="globalSearch()">
@@ -130,314 +128,72 @@
 </div>
 
 <script>
-// ========== FIREBASE CONFIG - PASTE YOUR 6 KEYS HERE ==========
-const firebaseConfig = {
-  apiKey: "PASTE_YOUR_API_KEY",
-  authDomain: "PASTE_YOUR_AUTH_DOMAIN",
-  databaseURL: "https://PASTE_YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "PASTE_YOUR_PROJECT_ID",
-  storageBucket: "PASTE_YOUR_STORAGE_BUCKET",
-  messagingSenderId: "PASTE_YOUR_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID"
-};
-// ==========================================================
+const firebaseConfig = { apiKey: "PASTE_YOUR_API_KEY", authDomain: "PASTE_YOUR_AUTH_DOMAIN", databaseURL: "https://PASTE_YOUR_PROJECT_ID-default-rtdb.firebaseio.com", projectId: "PASTE_YOUR_PROJECT_ID", storageBucket: "PASTE_YOUR_STORAGE_BUCKET", messagingSenderId: "PASTE_YOUR_SENDER_ID", appId: "PASTE_YOUR_APP_ID" };
 
-// GLOBAL DATA
-let CATEGORIES = [];
-let CONTACT = {email:'twinz.cooperate.services@gmail.com',thabo:'068 254 7352',thabang:'069 894 9596',location:'Greater Tubatse, Limpopo',hours:'Mon - Sat | 8am - 6pm',company:'TWINZ COOPERATE SERVICES PTY LTD',reg:'2026/XXXXXX/07'};
-let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let dataLoaded = false; let db = null; let firebaseEnabled = false; let auth = null;
-let SALES_DATA = [];
+let CATEGORIES = []; let CONTACT = {email:'twinz.cooperate.services@gmail.com',thabo:'068 254 7352',thabang:'069 894 9596',location:'Greater Tubatse, Limpopo',hours:'Mon - Sat | 8am - 6pm',company:'TWINZ COOPERATE SERVICES PTY LTD',reg:'2026/XXXXXX/07'};
+let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let dataLoaded = false; let db = null; let firebaseEnabled = false; let auth = null; let SALES_DATA = []; let ROLE_MAP = {};
 
-const DEFAULT_CATEGORIES = [
-  {id:'diagnostics', name:'Vehicle Diagnostics',desc:'All Brand Diagnostics Software. JLR, VW, AUDI, BENZ, BMW, TOYOTA, ISUZU, FORD, MAZDA, NISSAN + more',features:['Full System Scan','DTC Clear','Service Reset','DPF Regen','EPB','SAS','Key Programming','Twinz Master Scanner V25'],price:'From R450', outOfStock:false, products:[]},
-  {id:'internet', name:'Wireless Internet',desc:'Unlimited Fibre, LTE, Installation, Business WiFi, Router Sales, 24/7 Support',features:['Unlimited Data','Fast Installation','Business Packages'],price:'From R350/month', outOfStock:false, products:[]},
-  {id:'web', name:'Web Development',desc:'Business Websites, Landing Pages, E-commerce, Portfolio Sites',features:['Mobile-first','SEO','Hosting Setup'],price:'From R3000', note:'7-14 Days Delivery', outOfStock:false, products:[]},
-  {id:'app', name:'App Development',desc:'Android + iOS Apps, Business Apps, Admin Portals, Booking Systems',features:['React','Flutter','Firebase','ALL PERMISSIONS GRANTED'],price:'From R5000', note:'Custom quotes', outOfStock:false, products:[]},
-  {id:'parts', name:'Genuine Vehicle Parts',desc:'Engines, Gearboxes, Suspension, Electronics',features:['BMW','BENZ','AUDI','VW','JAGUAR','LAND ROVER + MORE'],price:'Quote on Request', outOfStock:false, products:[]},
-  {id:'workshop', name:'Workshop Partnerships',desc:'Supply parts to garages and workshops nationwide',features:['Fleet diagnostics','Bulk pricing','Nationwide SA'],price:'Contact for Rates', outOfStock:false, products:[]},
-  {id:'food', name:'Food Supply',desc:'Wholesale food supply for businesses, restaurants and events',features:['Bulk Orders','Fresh Produce','Nationwide Delivery','Custom Quotes'],price:'Quote on Request', outOfStock:false, products:[]}
-];
+const DEFAULT_CATEGORIES = [ {id:'diagnostics', name:'Vehicle Diagnostics',desc:'All Brand Diagnostics Software. JLR, VW, AUDI, BENZ, BMW, TOYOTA, ISUZU, FORD, MAZDA, NISSAN + more',features:['Full System Scan','DTC Clear','Service Reset','DPF Regen','EPB','SAS','Key Programming','Twinz Master Scanner V25'],price:'From R450', outOfStock:false, products:[]}, {id:'internet', name:'Wireless Internet',desc:'Unlimited Fibre, LTE, Installation, Business WiFi, Router Sales, 24/7 Support',features:['Unlimited Data','Fast Installation','Business Packages'],price:'From R350/month', outOfStock:false, products:[]}, {id:'web', name:'Web Development',desc:'Business Websites, Landing Pages, E-commerce, Portfolio Sites',features:['Mobile-first','SEO','Hosting Setup'],price:'From R3000', note:'7-14 Days Delivery', outOfStock:false, products:[]}, {id:'app', name:'App Development',desc:'Android + iOS Apps, Business Apps, Admin Portals, Booking Systems',features:['React','Flutter','Firebase','ALL PERMISSIONS GRANTED'],price:'From R5000', note:'Custom quotes', outOfStock:false, products:[]}, {id:'parts', name:'Genuine Vehicle Parts',desc:'Engines, Gearboxes, Suspension, Electronics',features:['BMW','BENZ','AUDI','VW','JAGUAR','LAND ROVER + MORE'],price:'Quote on Request', outOfStock:false, products:[]}, {id:'workshop', name:'Workshop Partnerships',desc:'Supply parts to garages and workshops nationwide',features:['Fleet diagnostics','Bulk pricing','Nationwide SA'],price:'Contact for Rates', outOfStock:false, products:[]}, {id:'food', name:'Food Supply',desc:'Wholesale food supply for businesses, restaurants and events',features:['Bulk Orders','Fresh Produce','Nationwide Delivery','Custom Quotes'],price:'Quote on Request', outOfStock:false, products:[]} ];
 
-// ROLE MAPPING + PERMISSIONS
-const ROLE_MAP = {
-  'ceo@twinz.co.za': 'CEO',
-  'manager@twinz.co.za': 'Manager',
-  'sales@twinz.co.za': 'Sales',
-  'reception@twinz.co.za': 'Reception'
-};
+const DEFAULT_ROLES = { 'ceo@twinz.co.za': 'CEO', 'manager@twinz.co.za': 'Manager', 'sales@twinz.co.za': 'Sales', 'reception@twinz.co.za': 'Reception' };
+const ROLE_PERMISSIONS = { CEO: {canEdit:true, canAddProduct:true, canDelete:true, canInvoice:true, canSeeDashboard:true, canManageRoles:true}, Manager: {canEdit:true, canAddProduct:true, canDelete:true, canInvoice:true, canSeeDashboard:true, canManageRoles:false}, Sales: {canEdit:false, canAddProduct:false, canDelete:false, canInvoice:true, canSeeDashboard:true, canManageRoles:false}, Reception: {canEdit:false, canAddProduct:false, canDelete:false, canInvoice:false, canSeeDashboard:false, canManageRoles:false} };
 
-const ROLE_PERMISSIONS = {
-  CEO: {canEdit:true, canAddProduct:true, canDelete:true, canInvoice:true, canSeeDashboard:true, canManageRoles:true},
-  Manager: {canEdit:true, canAddProduct:true, canDelete:true, canInvoice:true, canSeeDashboard:true, canManageRoles:false},
-  Sales: {canEdit:false, canAddProduct:false, canDelete:false, canInvoice:true, canSeeDashboard:true, canManageRoles:false},
-  Reception: {canEdit:false, canAddProduct:false, canDelete:false, canInvoice:false, canSeeDashboard:false, canManageRoles:false}
-};
-
-// ========== THEME TOGGLE P2 ==========
-function toggleTheme(){
-  const current = document.body.getAttribute('data-theme');
-  const next = current === 'light'? 'dark' : 'light';
-  document.body.setAttribute('data-theme', next);
-  localStorage.setItem('twinz_theme', next);
-}
+function toggleTheme(){ const current = document.body.getAttribute('data-theme'); const next = current === 'light'? 'dark' : 'light'; document.body.setAttribute('data-theme', next); localStorage.setItem('twinz_theme', next); }
 window.addEventListener('load', ()=>{ document.body.setAttribute('data-theme', localStorage.getItem('twinz_theme') || 'dark'); });
 
-// ========== INSTANT LOAD + FIREBASE AUTH + REALTIME SYNC ==========
-function initFirebase(){
-  try{
-    if(firebaseConfig.apiKey.includes("PASTE")) throw "No keys";
-    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    db = firebase.database();
-    auth = firebase.auth();
-    firebaseEnabled = true;
-    return true;
-  }catch(e){
-    firebaseEnabled = false;
-    return false;
-  }
-}
+function initFirebase(){ try{ if(firebaseConfig.apiKey.includes("PASTE")) throw "No keys"; if(!firebase.apps.length) firebase.initializeApp(firebaseConfig); db = firebase.database(); auth = firebase.auth(); firebaseEnabled = true; return true; }catch(e){ firebaseEnabled = false; return false; } // FIXED: ADDED CLOSING BRACE
 
-function loadLocalData(){
-  CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-  dataLoaded = true;
-  document.getElementById('loadingData').style.display='none';
-  document.getElementById('loadingClient').style.display='none';
-  renderDashboard(); renderTabs(); renderContent(); renderClient();
-}
+function loadLocalData(){ CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)); ROLE_MAP = DEFAULT_ROLES; dataLoaded = true; document.getElementById('loadingData').style.display='none'; document.getElementById('loadingClient').style.display='none'; renderDashboard(); renderTabs(); renderContent(); renderClient(); }
 
 function startSync(){
-  document.getElementById('loadingData').style.display='block';
-  document.getElementById('loadingClient').style.display='block';
+  document.getElementById('loadingData').style.display='block'; document.getElementById('loadingClient').style.display='block';
   const fallbackTimer = setTimeout(()=>{ if(!dataLoaded){ loadLocalData(); showError("Local Mode. Add Firebase keys for cloud sync."); }}, 1000);
-
-  if(!initFirebase()){
-    clearTimeout(fallbackTimer);
-    loadLocalData();
-    return;
-  }
+  if(!initFirebase()){ clearTimeout(fallbackTimer); loadLocalData(); return; }
 
   const ref = db.ref('twinz_data/main');
   ref.on('value', (snapshot) => {
-    clearTimeout(fallbackTimer);
-    const data = snapshot.val();
+    clearTimeout(fallbackTimer); const data = snapshot.val();
     if(data){
-      CATEGORIES = data.categories || DEFAULT_CATEGORIES;
-      CONTACT = data.contact || CONTACT;
-      SALES_DATA = data.sales || [];
-    } else {
-      ref.set({categories: DEFAULT_CATEGORIES, contact: CONTACT, sales: []});
-      CATEGORIES = DEFAULT_CATEGORIES;
-    }
-    dataLoaded = true;
-    document.getElementById('loadingData').style.display='none';
-    document.getElementById('loadingClient').style.display='none';
+      CATEGORIES = data.categories || DEFAULT_CATEGORIES; CONTACT = data.contact || CONTACT; SALES_DATA = data.sales || []; ROLE_MAP = data.roles || DEFAULT_ROLES; // LOAD ROLES FROM FIREBASE
+    } else { ref.set({categories: DEFAULT_CATEGORIES, contact: CONTACT, sales: [], roles: DEFAULT_ROLES}); CATEGORIES = DEFAULT_CATEGORIES; ROLE_MAP = DEFAULT_ROLES; }
+    dataLoaded = true; document.getElementById('loadingData').style.display='none'; document.getElementById('loadingClient').style.display='none';
     if(document.getElementById('app').style.display==='block'){ renderDashboard(); renderTabs(); renderContent(); }
     if(document.getElementById('clientView').style.display==='block'){ renderClient(); }
-  }, err => {
-    clearTimeout(fallbackTimer);
-    console.error(err);
-    showError("Firebase Error: " + err.message);
-    loadLocalData();
-  });
+  }, err => { clearTimeout(fallbackTimer); console.error(err); showError("Firebase Error: " + err.message); loadLocalData(); });
 }
 
-function saveToFirebase(){
-  if(!firebaseEnabled) { showError("Local Mode: Data will not sync."); return; }
-  db.ref('twinz_data/main').update({categories: CATEGORIES, contact: CONTACT, sales: SALES_DATA})
-.catch(err=>{ showError("Save Failed: " + err.message); });
-}
+function saveToFirebase(){ if(!firebaseEnabled) { showError("Local Mode: Data will not sync."); return; } db.ref('twinz_data/main').update({categories: CATEGORIES, contact: CONTACT, sales: SALES_DATA, roles: ROLE_MAP}).catch(err=>{ showError("Save Failed: " + err.message); }); } // SAVES ROLES NOW
 
 function showError(msg){ const box = document.getElementById('errorBox'); if(box){box.innerText = msg; box.style.display='block'; setTimeout(()=>{box.style.display='none'}, 4000);}}
 
-// AUTH FUNCTIONS P1
-function loginWithEmail(){
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  document.getElementById('authError').innerText = '';
+function loginWithEmail(){ const email = document.getElementById('loginEmail').value; const password = document.getElementById('loginPassword').value; document.getElementById('authError').innerText = ''; if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; } if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; }
+  auth.signInWithEmailAndPassword(email, password).then(() => { currentRole = ROLE_MAP[email.toLowerCase()] || 'Reception'; document.getElementById('loginScreen').style.display='none'; document.getElementById('app').style.display='block'; document.getElementById('roleBadge').className='role-badge '+currentRole; document.getElementById('roleBadge').innerText=currentRole; if(ROLE_PERMISSIONS[currentRole].canManageRoles) document.getElementById('roleManagerBtn').style.display='block'; startSync(); }).catch((error) => { document.getElementById('authError').innerText = error.message; }); }
 
-  if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; }
-  if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; }
+function forgotPassword(){ const email = document.getElementById('loginEmail').value; if(!email){ document.getElementById('authError').innerText = 'Enter your email first'; return; } auth.sendPasswordResetEmail(email).then(()=>{ alert('Password reset email sent!'); }).catch(e=>{ document.getElementById('authError').innerText = e.message; }); }
+function createAccount(){ const email = document.getElementById('loginEmail').value; const password = document.getElementById('loginPassword').value; document.getElementById('authError').innerText = ''; if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; } if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; } if(password.length < 6){ document.getElementById('authError').innerText = 'Password must be 6+ characters'; return; }
+  auth.createUserWithEmailAndPassword(email, password).then(() => { alert('Account Created! Default role: Reception. CEO can change role in Role Manager.'); currentRole = 'Reception'; document.getElementById('loginScreen').style.display='none'; document.getElementById('app').style.display='block'; document.getElementById('roleBadge').className='role-badge '+currentRole; document.getElementById('roleBadge').innerText=currentRole; startSync(); }).catch((error) => { document.getElementById('authError').innerText = error.message; }); }
+function logout(){ if(auth) auth.signOut(); dataLoaded = false; document.getElementById('app').style.display='none'; document.getElementById('loginScreen').style.display='block'; document.getElementById('shareLinkBox').style.display='none'; }
+function enterClientMode(){ document.getElementById('loginScreen').style.display='none'; document.getElementById('clientView').style.display='block'; startSync(); }
+function searchClient(){ const query = document.getElementById('clientSearch').value.toLowerCase(); document.querySelectorAll('#clientContent.card').forEach(card=>{ const text = card.innerText.toLowerCase(); card.style.display = (query === '' || text.includes(query))? 'block' : 'none'; }); }
 
-  auth.signInWithEmailAndPassword(email, password)
-.then((userCredential) => {
-    currentRole = ROLE_MAP[email.toLowerCase()] || 'Reception';
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('roleBadge').className='role-badge '+currentRole;
-    document.getElementById('roleBadge').innerText=currentRole;
-    if(ROLE_PERMISSIONS[currentRole].canManageRoles) document.getElementById('roleManagerBtn').style.display='block';
-    startSync();
-  })
-.catch((error) => {
-    document.getElementById('authError').innerText = error.message;
-  });
-}
+function globalSearch(){ const query = document.getElementById('globalSearch').value.toLowerCase(); renderTabs(); renderContent(); setTimeout(()=>{ document.querySelectorAll('.product-card').forEach(card=>{ const text = card.innerText.toLowerCase(); card.style.display = (query === '' || text.includes(query))? 'block' : 'none'; }); },100); }
 
-function forgotPassword(){ // P1
-  const email = document.getElementById('loginEmail').value;
-  if(!email){ document.getElementById('authError').innerText = 'Enter your email first'; return; }
-  auth.sendPasswordResetEmail(email).then(()=>{ alert('Password reset email sent!'); }).catch(e=>{ document.getElementById('authError').innerText = e.message; });
-}
+function openRoleManager(){ let html = `<h3>User Role Manager</h3><p style="color:var(--muted)">Change staff roles. Changes reflect on next login.</p>`; Object.keys(ROLE_MAP).forEach(email=>{ html += `<div style="display:flex;gap:10px;align-items:center;margin:10px 0"><input value="${email}" readonly style="flex:1"><select id="role${email}"><option ${ROLE_MAP[email]==='CEO'?'selected':''}>CEO</option><option ${ROLE_MAP[email]==='Manager'?'selected':''}>Manager</option><option ${ROLE_MAP[email]==='Sales'?'selected':''}>Sales</option><option ${ROLE_MAP[email]==='Reception'?'selected':''}>Reception</option></select></div>`; }); html += `<button class="btn" onclick="saveRoles()">Save Roles</button>`; document.getElementById('roleManagerBox').innerHTML = html; document.getElementById('roleManagerBox').style.display='block'; }
+function saveRoles(){ Object.keys(ROLE_MAP).forEach(email=>{ ROLE_MAP[email] = document.getElementById('role'+email).value; }); saveToFirebase(); alert('Roles updated! Users must logout and login again.'); document.getElementById('roleManagerBox').style.display='none'; }
 
-function createAccount(){
-  const email = document.getElementById('loginEmail').value;
-  const password = document.getElementById('loginPassword').value;
-  document.getElementById('authError').innerText = '';
-
-  if(!firebaseEnabled){ document.getElementById('authError').innerText = 'Add Firebase keys first'; return; }
-  if(!email ||!password){ document.getElementById('authError').innerText = 'Enter email and password'; return; }
-  if(password.length < 6){ document.getElementById('authError').innerText = 'Password must be 6+ characters'; return; }
-
-  auth.createUserWithEmailAndPassword(email, password)
-.then((userCredential) => {
-    alert('Account Created! Default role: Reception. CEO can change role in Role Manager.');
-    currentRole = 'Reception';
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('roleBadge').className='role-badge '+currentRole;
-    document.getElementById('roleBadge').innerText=currentRole;
-    startSync();
-  })
-.catch((error) => {
-    document.getElementById('authError').innerText = error.message;
-  });
-}
-
-function logout(){
-  if(auth) auth.signOut();
-  dataLoaded = false;
-  document.getElementById('app').style.display='none';
-  document.getElementById('loginScreen').style.display='block';
-  document.getElementById('shareLinkBox').style.display='none';
-}
-
-function enterClientMode(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('clientView').style.display='block';
-  startSync();
-}
-function searchClient(){
-  const query = document.getElementById('clientSearch').value.toLowerCase();
-  document.querySelectorAll('#clientContent.card').forEach(card=>{
-    const text = card.innerText.toLowerCase();
-    card.style.display = (query === '' || text.includes(query))? 'block' : 'none';
-  });
-}
-
-// GLOBAL SEARCH P2
-function globalSearch(){
-  const query = document.getElementById('globalSearch').value.toLowerCase();
-  renderTabs(); renderContent();
-  if(query){
-    document.querySelectorAll('#content.product-card').forEach(card=>{
-      const text = card.innerText.toLowerCase();
-      card.style.display = text.includes(query)? 'block' : 'none';
-    });
-  }
-}
-
-// ROLE MANAGER P1
-function openRoleManager(){
-  let html = `<h3>User Role Manager</h3><p style="color:var(--muted)">Change staff roles. Changes reflect on next login.</p>`;
-  Object.keys(ROLE_MAP).forEach(email=>{
-    html += `<div style="display:flex;gap:10px;align-items:center;margin:10px 0">
-      <input value="${email}" readonly style="flex:1">
-      <select id="role${email}">
-        <option ${ROLE_MAP[email]==='CEO'?'selected':''}>CEO</option>
-        <option ${ROLE_MAP[email]==='Manager'?'selected':''}>Manager</option>
-        <option ${ROLE_MAP[email]==='Sales'?'selected':''}>Sales</option>
-        <option ${ROLE_MAP[email]==='Reception'?'selected':''}>Reception</option>
-      </select>
-    </div>`;
-  });
-  html += `<button class="btn" onclick="saveRoles()">Save Roles</button>`;
-  document.getElementById('roleManagerBox').innerHTML = html;
-  document.getElementById('roleManagerBox').style.display='block';
-}
-function saveRoles(){
-  Object.keys(ROLE_MAP).forEach(email=>{
-    ROLE_MAP[email] = document.getElementById('role'+email).value;
-  });
-  alert('Roles updated! Users must logout and login again.');
-  document.getElementById('roleManagerBox').style.display='none';
-}
-
-// DASHBOARD + SALES REPORTS P1
-function renderDashboard(){
-  const perms = ROLE_PERMISSIONS[currentRole];
-  if(!perms.canSeeDashboard){ document.getElementById('dashboard').innerHTML=''; return; }
-
-  const totalProducts = CATEGORIES.reduce((a,c)=>a+c.products.length,0);
-  const outOfStock = CATEGORIES.reduce((a,c)=>a+c.products.filter(p=>p.outOfStock).length,0);
-  const totalSales = SALES_DATA.reduce((a,s)=>a+s.total,0);
-
-  let html = `
-  <div class="stat-card"><h4>Total Categories</h4><div class="num">${CATEGORIES.length}</div></div>
-  <div class="stat-card"><h4>Total Products</h4><div class="num">${totalProducts}</div></div>
-  <div class="stat-card"><h4>Out of Stock</h4><div class="num" style="color:var(--danger)">${outOfStock}</div></div>
-  <div class="stat-card"><h4>Total Revenue</h4><div class="num">R${totalSales.toFixed(2)}</div></div>
-  `;
-  document.getElementById('dashboard').innerHTML = html;
-}
+function renderDashboard(){ const perms = ROLE_PERMISSIONS[currentRole]; if(!perms.canSeeDashboard){ document.getElementById('dashboard').innerHTML=''; return; } const totalProducts = CATEGORIES.reduce((a,c)=>a+c.products.length,0); const outOfStock = CATEGORIES.reduce((a,c)=>a+c.products.filter(p=>p.outOfStock).length,0); const totalSales = SALES_DATA.reduce((a,s)=>a+s.total,0); let html = `<div class="stat-card"><h4>Total Categories</h4><div class="num">${CATEGORIES.length}</div></div><div class="stat-card"><h4>Total Products</h4><div class="num">${totalProducts}</div></div><div class="stat-card"><h4>Out of Stock</h4><div class="num" style="color:var(--danger)">${outOfStock}</div></div><div class="stat-card"><h4>Total Revenue</h4><div class="num">R${totalSales.toFixed(2)}</div></div>`; document.getElementById('dashboard').innerHTML = html; }
 
 function renderTabs(){document.getElementById('tabs').innerHTML = CATEGORIES.map((c,i)=>`<div class="tab ${i===currentTab?'active':''}" onclick="switchTab(${i})">${c.name}</div>`).join('');}
 function switchTab(i){ currentTab=i; renderTabs(); renderContent(); }
-function toggleStock(id){
-  const cat = CATEGORIES.find(c=>c.id===id);
-  cat.outOfStock =!cat.outOfStock;
-  // STOCK ALERT P2
-  if(cat.outOfStock) alert(`⚠️ ALERT: ${cat.name} marked OUT OF STOCK`);
-  saveToFirebase();
-}
-function addProduct(catId){
-  const title = document.getElementById('pTitle'+catId).value; const price = document.getElementById('pPrice'+catId).value;
-  const desc = document.getElementById('pDesc'+catId).value; const imgLink = document.getElementById('pImg'+catId).value;
-  if(!title ||!price){ alert('Enter Title and Price'); return; }
-  const cat = CATEGORIES.find(c=>c.id===catId); const newImages = imgLink.trim()? [imgLink.trim()] : [];
-  cat.products.push({id:Date.now(), title, price, desc, images:newImages, outOfStock:false});
-  document.getElementById('pTitle'+catId).value='';document.getElementById('pPrice'+catId).value='';document.getElementById('pDesc'+catId).value='';document.getElementById('pImg'+catId).value='';
-  saveToFirebase();
-}
+function toggleStock(id){ const cat = CATEGORIES.find(c=>c.id===id); cat.outOfStock =!cat.outOfStock; if(cat.outOfStock) alert(`⚠️ ALERT: ${cat.name} marked OUT OF STOCK`); saveToFirebase(); }
+function addProduct(catId){ const title = document.getElementById('pTitle'+catId).value; const price = document.getElementById('pPrice'+catId).value; const desc = document.getElementById('pDesc'+catId).value; const imgLink = document.getElementById('pImg'+catId).value; if(!title ||!price){ alert('Enter Title and Price'); return; } const cat = CATEGORIES.find(c=>c.id===catId); const newImages = imgLink.trim()? [imgLink.trim()] : []; cat.products.push({id:Date.now(), title, price, desc, images:newImages, outOfStock:false}); document.getElementById('pTitle'+catId).value='';document.getElementById('pPrice'+catId).value='';document.getElementById('pDesc'+catId).value='';document.getElementById('pImg'+catId).value=''; saveToFirebase(); }
 function deleteProduct(catId, pId){CATEGORIES.find(c=>c.id===catId).products = CATEGORIES.find(c=>c.id===catId).products.filter(p=>p.id!==pId); saveToFirebase();}
-function toggleProductStock(catId, pId){
-  const p = CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId);
-  p.outOfStock =!p.outOfStock;
-  if(p.outOfStock) alert(`⚠️ STOCK ALERT: ${p.title} is now OUT OF STOCK`);
-  saveToFirebase();
-}
+function toggleProductStock(catId, pId){ const p = CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId); p.outOfStock =!p.outOfStock; if(p.outOfStock) alert(`⚠️ STOCK ALERT: ${p.title} is now OUT OF STOCK`); saveToFirebase(); }
 function saveManualImage(catId, pId){const input = document.getElementById('manual'+catId+pId); const p = CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId); if(input.value.trim()){p.images.push(input.value.trim()); input.value=''; saveToFirebase();}}
 function deleteImage(catId, pId, index){CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId).images.splice(index,1); saveToFirebase();}
-function renderProducts(cat){
-  if(cat.products.length===0) return '<p style="color:var(--muted)">No products yet. Add your first item below.</p>';
-  const perms = ROLE_PERMISSIONS[currentRole];
-  return `<div class="product-grid">${cat.products.map(p=>`<div class="product-card">
-      ${p.images[0]?`<img src="${p.images[0]}">`:''}<h4>${p.title}</h4><p style="color:var(--muted);font-size:0.85rem">${p.desc}</p><div class="price">${p.price}</div>
-      ${perms.canInvoice?`<button class="btn small success" onclick="addToInvoice('${p.title}','${p.price}')">+ Add to Invoice</button>`:''}
-      ${perms.canEdit?`<div class="gallery-grid">${p.images.map((img,i)=>`<div class="gallery-item"><img src="${img}"><button class="del-btn" onclick="deleteImage('${cat.id}',${p.id},${i})">×</button></div>`).join('')}</div>
-      <input type="file" id="file${cat.id}${p.id}" accept="image/*"><button class="btn small" onclick="uploadToCatbox('${cat.id}',${p.id})">Upload Img</button>
-      <div style="display:flex;gap:8px"><input type="text" id="manual${cat.id}${p.id}" placeholder="Paste catbox link"><button class="btn small" onclick="saveManualImage('${cat.id}',${p.id})">Add</button></div>
-      <div style="display:flex;gap:6px;margin-top:8px"><button class="btn small" onclick="toggleProductStock('${cat.id}',${p.id})">${p.outOfStock?'In Stock':'Out Stock'}</button><button class="btn small danger" onclick="deleteProduct('${cat.id}',${p.id})">Delete</button></div>`:''}
-    </div>`).join('')}</div>`;
-}
-function renderContent(){
-  if(!dataLoaded) return;
-  const cat = CATEGORIES[currentTab];
-  const perms = ROLE_PERMISSIONS[currentRole];
-  let html = `<div class="card"><h3>${cat.name}</h3><p>${cat.desc}</p><ul>${cat.features.map(f=>`<li>${f}</li>`).join('')}</ul><div class="price">${cat.price}</div>${cat.note?`<p style="color:var(--muted);font-size:0.9rem">${cat.note}</p>`:''}
-    <h4 style="margin-top:16px">Products Hub - ${cat.products.length} Items</h4>${renderProducts(cat)}
-    ${perms.canAddProduct?`<div class="card" style="margin-top:15px"><h4>Add New Product to ${cat.name}</h4><input id="pTitle${cat.id}" placeholder="Product Title e.g. BMW N47 Engine"><input id="pPrice${cat.id}" placeholder="Price e.g. R25000 or Quote"><textarea id="pDesc${cat.id}" placeholder="Description, Specs, Vehicle Fitment"></textarea><input id="pImg${cat.id}" placeholder="Paste Catbox.moe Image Link Here - Optional"><button class="btn" onclick="addProduct('${cat.id}')">+ Add Product</button></div>`:''}
-    <h4 style="margin-top:12px">Send Client Request</h4><textarea id="msg${cat.id}" placeholder="Tell us what you need... Vehicle make/model for parts"></textarea><button class="btn secondary" onclick="sendWhatsApp('${cat.id}')">Send WhatsApp</button></div>`;
-  if(perms.canEdit){
-    html += `<div class="card"><h3>Category Controls - ${cat.name}</h3><input placeholder="Edit Category Price" value="${cat.price}" onchange="CATEGORIES[${currentTab}].price=this.value;saveToFirebase()"><textarea placeholder="Edit Category Description" onchange="CATEGORIES[${currentTab}].desc=this.value;saveToFirebase()">${cat.desc}</textarea>
-      <div style="display:flex;align-items:center;gap:10px;margin:12px 0"><input type="checkbox" id="stock${cat.id}" ${cat.outOfStock?'checked':''} onchange="toggleStock('${cat.id}')"><label>Mark Whole Category Out of Stock</label></div></div>`;
-  }
-  document.getElementById('content').innerHTML = html;
-}
-async function uploadToCatbox(catId, pId){
-  const fileInput = document.getElementById('file'+catId+pId); if(!fileInput.files[0]){ alert('Select afile first'); return; }
-  const formData = new FormData(); formData.append('reqtype','fileupload'); formData.append('fileToUpload', fileInput.files[0]);
-  try{const res = await fetch('https://catbox.moe/user/api.php',{method:'POST',body:formData}); const url = await res.text(); CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId).images.push(url); fileInput.value=''; saveToFirebase(); alert('Uploaded: '+url);}catch(e){ alert('Upload failed. Check connection.'); }
-}
+function renderProducts(cat){ if(cat.products.length===0) return '<p style="color:var(--muted)">No products yet. Add your first item below.</p>'; const perms = ROLE_PERMISSIONS[currentRole]; return `<div class="product-grid">${cat.products.map(p=>`<div class="product-card">${p.images[0]?`<img src="${p.images[0]}">`:''}<h4>${p.title}</h4><p style="color:var(--muted);font-size:0.85rem">${p.desc}</p><div class="price">${p.price}</div>${perms.canInvoice?`<button class="btn small success" onclick="addToInvoice('${p.title}','${p.price}')">+ Add to Invoice</button>`:''}${perms.canEdit?`<div class="gallery-grid">${p.images.map((img,i)=>`<div class="gallery-item"><img src="${img}"><button class="del-btn" onclick="deleteImage('${cat.id}',${p.id},${i})">×</button></div>`).join('')}</div><input type="file" id="file${cat.id}${p.id}" accept="image/*"><button class="btn small" onclick="uploadToCatbox('${cat.id}',${p.id})">Upload Img</button><div style="display:flex;gap:8px"><input type="text" id="manual${cat.id}${p.id}" placeholder="Paste catbox link"><button class="btn small" onclick="saveManualImage('${cat.id}',${p.id})">Add</button></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn small" onclick="toggleProductStock('${cat.id}',${p.id})">${p.outOfStock?'In Stock':'Out Stock'}</button><button class="btn small danger" onclick="deleteProduct('${cat.id}',${p.id})">Delete</button></div>`:''}</div>`).join('')}</div>`; }
+function renderContent(){ if(!dataLoaded) return; const cat = CATEGORIES[currentTab]; const perms = ROLE_PERMISSIONS[currentRole]; let html = `<div class="card"><h3>${cat.name}</h3><p>${cat.desc}</p><ul>${cat.features.map(f=>`<li>${f}</li>`).join('')}</ul><div class="price">${cat.price}</div>${cat.note?`<p style="color:var(--muted);font-size:0.9rem">${cat.note}</p>`:''}<h4 style="margin-top:16px">Products Hub - ${cat.products.length} Items</h4>${renderProducts(cat)}${perms.canAddProduct?`<div class="card" style="margin-top:15px"><h4>Add New Product to ${cat.name}</h4><input id="pTitle${cat.id}" placeholder="Product Title e.g. BMW N47 Engine"><input id="pPrice${cat.id}" placeholder="Price e.g. R25000 or Quote"><textarea id="pDesc${cat.id}" placeholder="Description, Specs, Vehicle Fitment"></textarea><input id="pImg${cat.id}" placeholder="Paste Catbox.moe Image Link Here - Optional"><button class="btn" onclick="addProduct('${cat.id}')">+ Add Product</button></div>`:''}<h4 style="margin-top:12px">Send Client Request</h4><textarea id="msg${cat.id}" placeholder="Tell us what you need... Vehicle make/model for parts"></textarea><button class="btn secondary" onclick="sendWhatsApp('${cat.id}')">Send WhatsApp</button></div>`; if(perms.canEdit){ html += `<div class="card"><h3>Category Controls - ${cat.name}</h3><input placeholder="Edit Category Price" value="${cat.price}" onchange="CATEGORIES[${currentTab}].price=this.value;saveToFirebase()"><textarea placeholder="Edit Category Description" onchange="CATEGORIES[${currentTab}].desc=this.value;saveToFirebase()">${cat.desc}</textarea><div style="display:flex;align-items:center;gap:10px;margin:12px 0"><input type="checkbox" id="stock${cat.id}" ${cat.outOfStock?'checked':''} onchange="toggleStock('${cat.id}')"><label>Mark Whole Category Out of Stock</label></div></div>`; } document.getElementById('content').innerHTML = html; }
+async function uploadToCatbox(catId, pId){ const fileInput = document.getElementById('file'+catId+pId); if(!fileInput.files[0]){ alert('Select a file first'); return; } const formData = new FormData(); formData.append('reqtype','fileupload'); formData.append('fileToUpload', fileInput.files[0]); try{const res = await fetch('https://catbox.moe/user/api.php',{method:'POST',body:formData}); const url = await res.text(); CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId).images.push(url); fileInput.value=''; saveToFirebase(); alert('Uploaded: '+url);}catch(e){ alert('Upload failed. Check connection.'); } }
 function sendWhatsApp(id){const msg = document.getElementById('msg'+id).value || 'Hello TWINZ, I need assistance'; window.open(`https://wa.me/27682547352?text=${encodeURIComponent(msg)}`,'_blank');}
 function generateClientLink(){const baseUrl = window.location.origin + window.location.pathname; currentShareLink = baseUrl + '#client'; document.getElementById('shareLink').innerText = currentShareLink; document.getElementById('shareLinkBox').style.display = 'block';}
 function copyLink(){navigator.clipboard.writeText(currentShareLink); alert('Link Copied!');}
@@ -469,7 +225,6 @@ function renderInvoice(){
   <div style="display:flex;gap:10px;margin-top:10px"><button class="btn" onclick="downloadPDF()">Download PDF</button><button class="btn success" onclick="sendInvoiceWhatsApp(${total.toFixed(2)})">Send via WhatsApp</button><button class="btn danger" onclick="invoiceItems=[];renderInvoice()">Clear</button><button class="btn secondary" onclick="document.getElementById('invoiceBox').style.display='none'">Close</button></div>`;
   document.getElementById('invoiceBox').innerHTML = html;
 
-  // P1: SAVE TO SALES DATA
   if(total > 0){
     SALES_DATA.push({id:invNo, date:date, total:total, items:invoiceItems.length});
     saveToFirebase();

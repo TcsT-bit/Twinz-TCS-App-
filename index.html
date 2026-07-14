@@ -26,7 +26,7 @@
 .card h3{color:var(--accent);margin-bottom:10px;font-size:1.2rem}
 .price{color:var(--warning);font-weight:800;font-size:1.3rem;margin:10px 0}
 .btn{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;width:100%;margin-top:10px;transition:0.2s}
-.btn:hover{transform:translateY(-2px)}.btn.secondary{background:var(--accent);color:#000}
+.btn:hover{transform:translateY(-2px);box-shadow:var(--glow)}.btn.secondary{background:var(--accent);color:#000}
 .btn.danger{background:var(--danger)}.btn.success{background:var(--success)}.btn.small{width:auto;padding:6px 12px;font-size:0.8rem}
   input,textarea{width:100%;padding:12px;background:#1f2937;border:1px solid #374151;border-radius:10px;color:var(--text);margin:6px 0}
 .admin-bar{background:rgba(0,0,0,0.8);backdrop-filter:blur(10px);border-bottom:2px solid var(--accent);padding:12px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;position:sticky;top:0;z-index:100}
@@ -52,6 +52,7 @@
 .invoice-totals{text-align:right;font-weight:800;font-size:1.2rem}
 .pwa-banner{position:fixed;bottom:20px;left:20px;right:20px;background:rgba(17,24,39,0.95);border:2px solid var(--accent);padding:15px;border-radius:12px;z-index:999;display:none}
 .loading{text-align:center;padding:40px;color:var(--accent)}
+.error-box{background:var(--danger);padding:12px;border-radius:10px;margin:10px 0}
   ul{list-style:none;padding-left:0} ul li{padding:4px 0;padding-left:20px;position:relative}
   ul li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
 </style>
@@ -80,6 +81,7 @@
   </div>
   <div class="container">
     <div id="loadingData" class="loading">Loading TWINZ Data...</div>
+    <div id="errorBox" class="error-box" style="display:none"></div>
     <div id="shareLinkBox" style="display:none;margin-bottom:15px" class="card">
       <h4>Client Link Ready</h4><div class="share-link" id="shareLink"></div><button class="btn" onclick="copyLink()">Copy Link</button>
     </div>
@@ -105,7 +107,7 @@
 </div>
 
 <script>
-// ========== FIREBASE CONFIG - REPLACE WITH YOURS ==========
+// ========== FIREBASE CONFIG - PASTE YOUR 6 KEYS HERE ==========
 const firebaseConfig = {
   apiKey: "PASTE_YOUR_API_KEY",
   authDomain: "PASTE_YOUR_AUTH_DOMAIN",
@@ -114,14 +116,12 @@ const firebaseConfig = {
   messagingSenderId: "PASTE_YOUR_SENDER_ID",
   appId: "PASTE_YOUR_APP_ID"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 // ==========================================================
 
 // GLOBAL DATA
 let CATEGORIES = [];
 let CONTACT = {email:'twinz.cooperate.services@gmail.com',thabo:'068 254 7352',thabang:'069 894 9596',location:'Greater Tubatse, Limpopo',hours:'Mon - Sat | 8am - 6pm',company:'TWINZ COOPERATE SERVICES PTY LTD',reg:'2026/XXXXXX/07'};
-let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let unsubscribe = null; let dataLoaded = false;
+let currentRole = 'CEO'; let currentTab = 0; let currentShareLink = ''; let invoiceItems = []; let deferredPrompt; let unsubscribe = null; let dataLoaded = false; let db = null; let firebaseEnabled = false;
 
 const DEFAULT_CATEGORIES = [
   {id:'diagnostics', name:'Vehicle Diagnostics',desc:'All Brand Diagnostics Software. JLR, VW, AUDI, BENZ, BMW, TOYOTA, ISUZU, FORD, MAZDA, NISSAN + more',features:['Full System Scan','DTC Clear','Service Reset','DPF Regen','EPB','SAS','Key Programming','Twinz Master Scanner V25'],price:'From R450', outOfStock:false, products:[]},
@@ -133,11 +133,43 @@ const DEFAULT_CATEGORIES = [
   {id:'food', name:'Food Supply',desc:'Wholesale food supply for businesses, restaurants and events',features:['Bulk Orders','Fresh Produce','Nationwide Delivery','Custom Quotes'],price:'Quote on Request', outOfStock:false, products:[]}
 ];
 
-// ========== FIREBASE SYNC FUNCTIONS ==========
+// ========== INSTANT LOAD + FIREBASE SYNC ==========
+function initFirebase(){
+  try{
+    if(firebaseConfig.apiKey.includes("PASTE")) throw "No keys";
+    if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseEnabled = true;
+    return true;
+  }catch(e){
+    firebaseEnabled = false;
+    return false;
+  }
+}
+
+function loadLocalData(){
+  CATEGORIES = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+  dataLoaded = true;
+  document.getElementById('loadingData').style.display='none';
+  document.getElementById('loadingClient').style.display='none';
+  renderTabs(); renderContent(); renderClient();
+}
+
 function startSync(){
   document.getElementById('loadingData').style.display='block';
   document.getElementById('loadingClient').style.display='block';
+
+  // INSTANT FALLBACK: 1.5s timeout
+  const fallbackTimer = setTimeout(()=>{ if(!dataLoaded){ loadLocalData(); showError("Running in Local Mode. Add Firebase keys for cloud sync."); }}, 1500);
+
+  if(!initFirebase()){
+    clearTimeout(fallbackTimer);
+    loadLocalData();
+    return;
+  }
+
   unsubscribe = db.collection('twinz_data').doc('main').onSnapshot((doc) => {
+    clearTimeout(fallbackTimer);
     if(doc.exists){
       CATEGORIES = doc.data().categories || DEFAULT_CATEGORIES;
       CONTACT = doc.data().contact || CONTACT;
@@ -150,14 +182,22 @@ function startSync(){
     document.getElementById('loadingClient').style.display='none';
     if(document.getElementById('app').style.display==='block'){ renderTabs(); renderContent(); }
     if(document.getElementById('clientView').style.display==='block'){ renderClient(); }
-  }, err => { alert("Firebase Error: Check your config keys"); console.error(err); });
+  }, err => {
+    clearTimeout(fallbackTimer);
+    console.error(err);
+    showError("Firebase Error: " + err.message);
+    loadLocalData();
+  });
 }
 
 function saveToFirebase(){
+  if(!firebaseEnabled) { showError("Local Mode: Data will not sync. Add Firebase keys."); return; }
   db.collection('twinz_data').doc('main').update({categories: CATEGORIES, contact: CONTACT})
-.catch(err=>{ console.error("Firebase Save Error:", err); alert("Sync failed. Check internet."); });
+.catch(err=>{ showError("Save Failed: " + err.message); });
 }
-// ========== END FIREBASE SYNC ==========
+
+function showError(msg){ const box = document.getElementById('errorBox'); box.innerText = msg; box.style.display='block'; setTimeout(()=>{box.style.display='none'}, 4000); }
+// ========== END SYNC ==========
 
 function login(role){
   currentRole = role;
@@ -165,7 +205,7 @@ function login(role){
   document.getElementById('app').style.display='block';
   document.getElementById('roleBadge').className='role-badge '+role;
   document.getElementById('roleBadge').innerText=role;
-  startSync(); // LOADS DATA FOR EVERY ROLE
+  startSync(); // LOADS FOR EVERY ROLE INSTANTLY
 }
 function logout(){
   if(unsubscribe) unsubscribe();
@@ -177,7 +217,7 @@ function logout(){
 function enterClientMode(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('clientView').style.display='block';
-  startSync(); // LOADS DATA FOR CLIENTS TOO
+  startSync();
 }
 function searchClient(){
   const query = document.getElementById('clientSearch').value.toLowerCase();

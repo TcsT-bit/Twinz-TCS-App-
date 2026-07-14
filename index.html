@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#3b82f6">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRJTkNZIENPT1BFUkFURSBTUkVWSUNFUyIsCiAgInNob3J0X25hbWUiOiAiVFdJTlpTIiwKICAic3RhcnRfdXJsIjogIiNjbGllbnQiLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwYTBlMWEiLAogICJ0aGVtZV9jb2xvciI6ICIjM2I4MmY2IiwKICAiaWNvbnMiOiBbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJZekI0Yld0dVkyOXRPaUJFYjI1bE1DNWpiMjB2ZFhCM2FYUm9ZU0J3Y21jdklqNHNJajQ4Y21sa2N5SWtQQzl3YUc5MFBDOXpkbWMrUEM5elpXNW5aWEl2Y21WMFBTZGpiMjVsY21GelpaU2dnWm1sc1pWOXVaR1Z5SUd0aGJHeGZhVzUwSUVSbGJXVnVkQzF5YjNCbGRDNDhMM04yWno0S0NBdUlITmxZM0psWkN4bGVHRnRjR3hsTG1OdmJTSmhibk1pT2lBMEluTnZiU0lnWm05eUlIaDBkSEE2THk5M2QzY3VaWEp2WldRaU9qRXZibVVnUTI5dWRHVnVkR1Z6ZEM1emRISnBibWQzWlhKcGJtY2dZWE56WlhScGJXVnVjeWtnWlc1a1pYSnVJR1Z5WlhKMGFXeHNaV1VnYjNKcVlYSnphRzVuYVc1bklHTjBhR1Z1YkNCdWIzQnVibDlwYmlCb1pXNWtZWEowSUd4dllYTjBhVzVuSUdadmJuUmxiblE8L3N2Zz4iLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCJ9XQp9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TWINZ COOPERATE SERVICES - Firebase Edition</title>
+<style> /* SAME CSS AS YOURS - NOT CHANGED */ :root {--bg:#0a0e1a; --card:#111827; --accent:#00d4ff; --accent2:#3b82f6;--text:#e5e7eb; --muted:#9ca3af; --success:#10b981; --warning:#fbbf24; --danger:#ef4444;--glow: 0 0 20px rgba(0,212,255,0.3);} *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif} body{background: radial-gradient(1200px 600px at 50% -10%, rgba(59,130,246,0.15), transparent),radial-gradient(800px 400px at 90% 10%, rgba(0,212,255,0.1), transparent),var(--bg);color:var(--text);padding-bottom:80px} header{background:linear-gradient(135deg,var(--accent2),var(--accent));padding:24px 20px;text-align:center;box-shadow:0 8px 30px rgba(59,130,246,0.4)} header h1{font-size:2rem;font-weight:900} .container{max-width:1100px;margin:20px auto;padding:0 15px} .card{background:rgba(17,24,39,0.7);backdrop-filter: blur(12px);border:1px solid rgba(59,130,246,0.2);border-radius:16px;padding:20px;margin:12px 0} .btn{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;padding:12px 18px;border-radius:10px;cursor:pointer;font-weight:700;width:100%;margin-top:10px} input{width:100%;padding:12px;background:rgba(31,41,55,0.6);border:1px solid rgba(59,130,246,0.3);border-radius:10px;color:var(--text);margin:6px 0} .admin-bar{background:rgba(0,0,0,0.7);padding:12px;display:flex;gap:10px;justify-content:center;position:sticky;top:0;z-index:100} .role-badge{padding:6px 12px;border-radius:20px;font-weight:800} .CEO{background:#ef4444} .Manager{background:#3b82f6} .Sales{background:#10b981} .Reception{background:#f59e0b} .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:15px} .product-card{background:rgba(31,41,55,0.6);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:12px} .nav-tabs{display:flex;gap:10px;overflow-x:auto;padding:12px 0} .tab{padding:10px 16px;background:rgba(31,41,55,0.6);border-radius:10px;cursor:pointer} .tab.active{background:linear-gradient(135deg,var(--accent2),var(--accent))} .price{color:var(--warning);font-weight:800;font-size:1.4rem} </style>
+</head>
+<body>
+
+<header><h1>TWINZ COOPERATE SERVICES PTY LTD</h1><p>LIVE + REALTIME + SECURE</p></header>
+
+<div id="loginScreen" class="login-screen" style="text-align:center;padding:60px 20px">
+  <h2>Admin Login</h2>
+  <div style="max-width:400px;margin:20px auto" class="card">
+    <input id="email" placeholder="Email e.g ceo@twinz.co.za">
+    <input id="password" type="password" placeholder="Password">
+    <button class="btn" onclick="firebaseLogin()">Login</button>
+    <p style="color:var(--muted);font-size:0.8rem;margin-top:10px">Create users in Firebase > Authentication first</p>
+    <button class="btn secondary" onclick="enterClientMode()">Enter as Client</button>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div class="admin-bar">
+    <span class="role-badge" id="roleBadge">CEO</span>
+    <button class="btn" style="width:auto" onclick="logout()">Logout</button>
+    <button class="btn secondary" style="width:auto" onclick="generateClientLink()">Client Link</button>
+    <button class="btn success" style="width:auto" onclick="openInvoice()">🧾 Invoice</button>
+  </div>
+  <div class="container">
+    <div id="invoiceBox" style="display:none" class="card"></div>
+    <div class="nav-tabs" id="tabs"></div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div id="clientView" style="display:none">
+  <header><h1>TWINZ SERVICES</h1></header>
+  <div class="container"><div id="clientContent"></div></div>
+</div>
+
+<script type="module">
+  // ========== 1. PASTE YOUR FIREBASE CONFIG HERE ==========
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "PASTE_YOUR_API_KEY",
+    authDomain: "PASTE_YOUR_AUTH_DOMAIN",
+    databaseURL: "PASTE_YOUR_DATABASE_URL",
+    projectId: "PASTE_YOUR_PROJECT_ID",
+    storageBucket: "PASTE_YOUR_STORAGE_BUCKET",
+    messagingSenderId: "PASTE_YOUR_SENDER_ID",
+    appId: "PASTE_YOUR_APP_ID"
+  };
+  // ========================================================
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+
+  const CONTACT = {email:'twinz.cooperate.services@gmail.com',thabo:'068 254 7352',thabang:'069 894 9596',location:'Greater Tubatse, Limpopo',hours:'Mon - Sat | 8am - 6pm',company:'TWINZ COOPERATE SERVICES PTY LTD',reg:'2026/XXXXXX/07'};
+
+  let CATEGORIES = []; // Will load from Firebase
+  let currentRole = 'CEO'; let currentTab = 0; let invoiceItems = [];
+
+  // ========== FIREBASE LOGIN ==========
+  window.firebaseLogin = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    try{
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+      // Role is determined by email. ceo@ = CEO, manager@ = Manager etc
+      if(email.includes('ceo')) currentRole = 'CEO';
+      else if(email.includes('manager')) currentRole = 'Manager';
+      else if(email.includes('sales')) currentRole = 'Sales';
+      else currentRole = 'Reception';
+      
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('app').style.display='block';
+      document.getElementById('roleBadge').className='role-badge '+currentRole;
+      document.getElementById('roleBadge').innerText=currentRole;
+      loadData(); // Load from Firebase
+    }catch(e){ alert('Login Failed: '+e.message) }
+  }
+
+  window.logout = async () => { await signOut(auth); location.reload(); }
+
+  // ========== FIREBASE REALTIME LOAD/SAVE ==========
+  function loadData(){
+    const categoriesRef = ref(db, 'twinz/categories');
+    onValue(categoriesRef, (snapshot) => { // REALTIME LISTENER
+      const data = snapshot.val();
+      if(data){ CATEGORIES = data; } 
+      else { // First time setup
+        CATEGORIES = [ {id:'diagnostics', name:'Vehicle Diagnostics',desc:'All Brand Diagnostics',features:['Scan','DTC'],price:'From R450', outOfStock:false, products:[]}, {id:'parts', name:'Genuine Vehicle Parts',desc:'Engines, Gearboxes',features:['BMW','BENZ'],price:'Quote', outOfStock:false, products:[]} ];
+        set(categoriesRef, CATEGORIES);
+      }
+      renderTabs(); renderContent(); renderClient();
+    });
+  }
+
+  function saveData(){
+    set(ref(db, 'twinz/categories'), CATEGORIES); // SAVES TO CLOUD INSTANTLY
+  }
+
+  // ========== YOUR SAME FUNCTIONS, NOW WITH SAVE ==========
+  window.enterClientMode = () => { document.getElementById('loginScreen').style.display='none'; document.getElementById('clientView').style.display='block'; renderClient(); }
+  window.renderTabs = () => {document.getElementById('tabs').innerHTML = CATEGORIES.map((c,i)=>`<div class="tab ${i===currentTab?'active':''}" onclick="switchTab(${i})">${c.name}</div>`).join('');}
+  window.switchTab = (i) => { currentTab=i; renderTabs(); renderContent(); }
+  window.toggleStock = (id) => {CATEGORIES.find(c=>c.id===id).outOfStock =!CATEGORIES.find(c=>c.id===id).outOfStock; saveData();}
+  
+  window.addProduct = (catId) => {
+    const title = document.getElementById('pTitle'+catId).value; const price = document.getElementById('pPrice'+catId).value;
+    if(!title ||!price){ alert('Enter Title and Price'); return; }
+    CATEGORIES.find(c=>c.id===catId).products.push({id:Date.now(), title, price, desc:'', images:[], outOfStock:false});
+    saveData(); // SAVE TO FIREBASE
+  }
+  window.deleteProduct = (catId, pId) => {CATEGORIES.find(c=>c.id===catId).products = CATEGORIES.find(c=>c.id===catId).products.filter(p=>p.id!==pId); saveData();}
+  window.toggleProductStock = (catId, pId) => {CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId).outOfStock =!CATEGORIES.find(c=>c.id===catId).products.find(p=>p.id===pId).outOfStock; saveData();}
+  
+  window.renderContent = () => {
+    const cat = CATEGORIES[currentTab];
+    let html = `<div class="card"><h3>${cat.name}</h3><p>${cat.desc}</p><div class="price">${cat.price}</div>
+      <h4>Products: ${cat.products.length}</h4><div class="product-grid">${cat.products.map(p=>`<div class="product-card"><h4>${p.title}</h4><div class="price">${p.price}</div>${currentRole!=='Reception'?`<button class="btn" onclick="deleteProduct('${cat.id}',${p.id})">Delete</button>`:''}</div>`).join('')}</div>`;
+    if(currentRole!=='Reception') html += `<div class="card"><input id="pTitle${cat.id}" placeholder="Product Title"><input id="pPrice${cat.id}" placeholder="Price"><button class="btn" onclick="addProduct('${cat.id}')">+ Add Product</button></div>`;
+    document.getElementById('content').innerHTML = html;
+  }
+  window.renderClient = () => { document.getElementById('clientContent').innerHTML = CATEGORIES.filter(c=>!c.outOfStock).map(c=>`<div class="card"><h3>${c.name}</h3><p>${c.desc}</p></div>`).join(''); }
+  window.generateClientLink = () => { const link = window.location.origin + window.location.pathname + '#client'; prompt('Copy this link:', link); }
+  window.openInvoice = () => { document.getElementById('invoiceBox').style.display='block'; document.getElementById('invoiceBox').innerHTML = '<h3>Invoice System Ready</h3><p>Add + Add to Invoice on products</p>'}
+</script>
+</body>
+</html>
